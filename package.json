@@ -1,0 +1,19 @@
+{
+  "name": "earnings-bot",
+  "version": "1.0.0",
+  "description": "receives earnings calendar updates via webhooks and spams a discord channel with them",
+  "main": "index.js",
+  "scripts": {
+    "debug": "nodemon index.js"
+  },
+  "author": " <Bo Carey>",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^12.2.0",
+    "jquery": "^3.5.0",
+    "jsdom": "^16.2.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.3"
+  }
+}
