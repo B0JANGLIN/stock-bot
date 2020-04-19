@@ -1,7 +1,7 @@
 {
-  "name": "earnings-bot",
+  "name": "stock-bot",
   "version": "1.0.0",
-  "description": "receives earnings calendar updates via webhooks and spams a discord channel with them",
+  "description": "receives commands from users in a discord channel and sends stock info to them",
   "main": "index.js",
   "scripts": {
     "debug": "nodemon index.js"
