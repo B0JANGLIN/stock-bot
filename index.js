@@ -7,6 +7,9 @@ const { window } = new JSDOM();
 const { document } = (new JSDOM('')).window;
 global.document = document;
 var $ = jQuery = require('jquery')(window);
+const millify = require('millify');
+
+var intervalTimer = null;
 
 let metrics = (words, msg) => {
     let metric = null;
@@ -93,25 +96,34 @@ let financials = (words, msg) => {
     if (symbol) {
         $.get(`https://financialmodelingprep.com/api/v3/financials/${statement ? statement : 'balance-sheet-statement'}/${symbol}${frequency ? '?period=' + frequency : ''}`, data =>{
             if (data && data.symbol && data.financials) {
+                if (statement) statement = statement.split('-').join(' ');
                 let intro_string = `Here are ${symbol}'s latest ${frequency ? 'quarterly' : 'yearly'} financials:`;
                 let financialData = data.financials[0];
+                console.log('financialData :', financialData);
                 
                 const messageEmbed = new Discord.MessageEmbed()
                 .setColor('#0099ff')
                 .setTitle(`${symbol}'s latest ${frequency ? 'quarterly' : 'yearly'} financials:`)
                 // .setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
-                .addFields(
-                    {name: 'Cash and equivalents', value: financialData['Cash and cash equivalents'], inline: true},
-                    {name: 'Assets', value: financialData['Total current assets'], inline: true},
-                    {name: 'Short-term investments', value: financialData['Short-term investments'], inline: true},
-                    {name: 'Short-term debt', value: financialData['Short-term debt'], inline: true},
-                    {name: 'Long-term debt', value: financialData['Long-term debt'], inline: true},
-                    {name: 'Total debt', value: financialData['Total debt'], inline: true}
-                )
-                .setDescription('Some description here')
-                .setThumbnail('https://cdn.discordapp.com/icons/687054731293884437/a8ea2f71aa8915f20a676989e5c7bd91.png?size=128')
+                .setDescription(`Data from ${financialData['date']} ${statement ? statement : 'balance sheet'}`)
                 .setTimestamp()
-                .setFooter('Some footer text here', 'https://cdn.discordapp.com/icons/687054731293884437/a8ea2f71aa8915f20a676989e5c7bd91.png?size=128');
+                .setFooter(`I love you`, 'https://cdn.discordapp.com/icons/687054731293884437/a8ea2f71aa8915f20a676989e5c7bd91.png?size=128');
+
+                for (let key in financialData) {
+                    if (key !== 'date') {
+                        let original = parseFloat(financialData[key]);
+                        if (typeof original === 'number' && original !== 0) {
+                            let num_str = millify.default(original, {
+                                precision: 2,
+                                lowercase: true
+                            });
+                            if (num_str && num_str.length) {
+                                messageEmbed
+                                    .addField(key, num_str, true)
+                            }
+                        }
+                    }
+                }
 
                 // msg.channel.send(intro_string);
                 msg.channel.send(messageEmbed);
@@ -191,6 +203,55 @@ var magic = (msg) => {
     }
 }
 
+var emulateTicker = (symbol, msg) => {
+    if (intervalTimer) {
+        clearInterval(intervalTimer);
+    }
+    let timer = 60000;
+    let startInterval = (symbol, msg) => {
+        intervalTimer = setInterval(() => {
+            timer -= 1000;
+            $.get(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${auth.finnhub_key}`, async data => {
+                const messageEmbed1 = new Discord.MessageEmbed()
+                    .setColor('#0099ff')
+                    .setTitle(`${symbol}\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003`)
+                    .setTimestamp()
+                    .addField('Current', data['c'], false)
+                    .addField('High', data['h'], true)
+                    .addField('\u200B', '\u200B', true)
+                    .addField('Low', data['l'], true)
+                    .addField("Today's Open", data['o'], true)
+                    .addField('\u200B', '\u200B', true)
+                    .addField("Yesterday's Close", data['pc'], true);
+                msg.edit(messageEmbed1);
+            });
+        }, 1000);
+    }
+
+    $.get(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${auth.finnhub_key}`, async data => {
+        
+        const messageEmbed = new Discord.MessageEmbed()
+            .setColor('#0099ff')
+            .setTitle(`${symbol}\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003`)
+            .setTimestamp()
+            .addField('Current', data['c'], false)
+            .addField('High', data['h'], true)
+            .addField('\u200B', '\u200B', true)
+            .addField('Low', data['l'], true)
+            .addField("Today's Open", data['o'], true)
+            .addField('\u200B', '\u200B', true)
+            .addField("Yesterday's Close", data['pc'], true);
+
+        let sent_msg = await msg.channel.send(messageEmbed);
+        startInterval(symbol, sent_msg);
+        setTimeout(() => {
+            if (intervalTimer) {
+                clearInterval(intervalTimer);
+            }
+        }, 60000);
+    });
+}
+
 client.on('ready', () => {
     console.log('all logged in!!!!');
 });
@@ -201,38 +262,50 @@ client.on('message', msg => {
     let phrases = msg.content.substring(1).split(' ');
     let found_home = false;
     console.log('phrases :', phrases);
-    for (let i = 0; i < phrases.length; i++) {
-        let word = phrases[i];
-        switch(word) {
-            case 'met':
-            case 'metrics':
-            case 'price':
-            case 'growth':
-            case 'valuation':
-            case 'margin':
-            case 'management':
-            case 'perShare':
-            case 'financialStrength':
-                metrics(phrases, msg);
-                found_home = true;
-                break;
-            case 'fin':
-            case 'financials':
-            case 'balancesheet':
-            case 'bs':
-            case 'income':
-            case 'ic':
-            case 'cashflow':
-            case 'cf':
-                financials(phrases, msg);
-                found_home = true;
-                break;
-            case '8':
-                magic(msg);
-                found_home = true;
-                break;
+    if (phrases.length === 1 && phrases[0] === phrases[0].toUpperCase()) {
+        emulateTicker(phrases[0], msg);
+        found_home = true;
+    }
+    if (!found_home) {
+        for (let i = 0; i < phrases.length; i++) {
+            let word = phrases[i];
+            switch(word) {
+                case 'met':
+                case 'metrics':
+                case 'price':
+                case 'growth':
+                case 'valuation':
+                case 'margin':
+                case 'management':
+                case 'perShare':
+                case 'financialStrength':
+                    metrics(phrases, msg);
+                    found_home = true;
+                    break;
+                case 'fin':
+                case 'financials':
+                case 'balancesheet':
+                case 'bs':
+                case 'income':
+                case 'ic':
+                case 'cashflow':
+                case 'cf':
+                    financials(phrases, msg);
+                    found_home = true;
+                    break;
+                case 'e':
+                case 'earn':
+                case 'earnings':
+                    earnings(phrases, msg);
+                    found_home = true;
+                    break;
+                case '8':
+                    magic(msg);
+                    found_home = true;
+                    break;
+            }
+            if (found_home) i = phrases.length;
         }
-        if (found_home) i = phrases.length;
     }
     if (!found_home) {
         msg.reply(`I couldn't figure that one out`);
