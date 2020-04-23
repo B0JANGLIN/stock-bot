@@ -11,6 +11,21 @@ const millify = require('millify');
 
 var intervalTimer = null;
 
+let cleanup = (msg) => {
+    msg.channel.messages.fetch().then(message_map => {
+
+        for (let items of message_map) {
+            let snowflake = items[0];
+            console.log(`deleting message:: ${snowflake}`);
+            let message = items[1];
+            if (message.content.substring(0, 1) === '!' || message.author.bot) {
+                message.delete();
+            }
+        }
+    });
+
+}
+
 let metrics = (words, msg) => {
     let metric = null;
     let symbol = null;
@@ -270,6 +285,11 @@ client.on('message', msg => {
         for (let i = 0; i < phrases.length; i++) {
             let word = phrases[i];
             switch(word) {
+                case 'cleanup':
+                case 'clean':
+                    cleanup(msg);
+                    found_home = true;
+                    break;
                 case 'met':
                 case 'metrics':
                 case 'price':
