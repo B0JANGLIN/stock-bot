@@ -18,65 +18,12 @@ let cleanup = (msg) => {
             let snowflake = items[0];
             console.log(`deleting message:: ${snowflake}`);
             let message = items[1];
-            if (message.content.substring(0, 1) === '!' || message.author.bot) {
+            if (message.content.substring(0, 1) === '?' || message.author.bot) {
                 message.delete();
             }
         }
     });
 
-}
-
-let metrics = (words, msg) => {
-    let metric = null;
-    let symbol = null;
-    words.forEach(word => {
-        if (word === word.toUpperCase())
-            symbol = word;
-        else {
-            switch (word) {
-                case 'price':
-                case 'p':
-                    metric = 'price';
-                    break;
-                case 'growth':
-                case 'g':
-                    metric = 'growth';
-                    break;
-                case 'valuation':
-                case 'value':
-                case 'val':
-                case 'v':
-                    metric = 'valuation';
-                    break;
-                case 'margin':
-                case 'm':
-                    metric = 'margin';
-                    break;
-                case 'management':
-                    metric = 'management';
-                    break;
-                case 'pershare':
-                case 'per':
-                case 'share':
-                case 'perShare':
-                    metric = 'perShare';
-                    break;
-                case 'financial':
-                case 'financialStrength':
-                case 'strength':
-                case 'fs':
-                    metric = 'financialStrength';
-                    break;
-            }
-        }
-    });
-    if (symbol && metric) {
-        $.get(`https://finnhub.io/api/v1/stock/metric?symbol=${symbol}&metric=${metric}&token=${auth.earnings_key}`, data => {
-            msg.channel.send('i have data about ' + symbol);
-        });
-    } else {
-        return msg.channel.send(`That didn't work. Try 'price', 'valuation', 'growth', 'margin', 'management', 'financialStrength' or 'perShare'`);
-    }
 }
 
 let financials = (words, msg) => {
@@ -218,52 +165,46 @@ var magic = (msg) => {
     }
 }
 
-var emulateTicker = (symbol, msg) => {
-    if (intervalTimer) {
-        clearInterval(intervalTimer);
-    }
-    let timer = 60000;
-    let startInterval = (symbol, msg) => {
-        intervalTimer = setInterval(() => {
-            timer -= 1000;
-            $.get(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${auth.finnhub_key}`, async data => {
-                const messageEmbed1 = new Discord.MessageEmbed()
-                    .setColor('#0099ff')
-                    .setTitle(`${symbol}\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003`)
-                    .setTimestamp()
-                    .addField('Current', data['c'], false)
-                    .addField('High', data['h'], true)
-                    .addField('\u200B', '\u200B', true)
-                    .addField('Low', data['l'], true)
-                    .addField("Today's Open", data['o'], true)
-                    .addField('\u200B', '\u200B', true)
-                    .addField("Yesterday's Close", data['pc'], true);
-                msg.edit(messageEmbed1);
-            });
-        }, 1000);
-    }
+var getQuote = (symbol, msg) => {
 
-    $.get(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${auth.finnhub_key}`, async data => {
+    $.get(`https://financialmodelingprep.com/api/v3/quote/${symbol}`, async data => {
+        let quote_data = data[0];
         
         const messageEmbed = new Discord.MessageEmbed()
             .setColor('#0099ff')
-            .setTitle(`${symbol}\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003\u2003`)
+            .setTitle(`${symbol}: `)
+            .setDescription(`${millify.default(quote_data["price"], {lowercase: true})}`)
             .setTimestamp()
-            .addField('Current', data['c'], false)
-            .addField('High', data['h'], true)
+            .addField(`${quote_data["changesPercentage"] > 0 ? '+' : ''}$${millify.default(quote_data["change"], {precision: 1, lowercase: true})} ( ${quote_data["changesPercentage"] > 0 ? '+' : ''}${millify.default(quote_data["changesPercentage"], {precision: 1, lowercase: true})}% )`, '\u200B', false)
+            .addField("Today's Low", millify.default(quote_data["dayLow"], {lowercase: true}), true)
             .addField('\u200B', '\u200B', true)
-            .addField('Low', data['l'], true)
-            .addField("Today's Open", data['o'], true)
+            .addField("Today's High", millify.default(quote_data["dayHigh"], {lowercase: true}), true)
+            .addField("Year's Low", millify.default(quote_data["yearLow"], {lowercase: true}), true)
             .addField('\u200B', '\u200B', true)
-            .addField("Yesterday's Close", data['pc'], true);
+            .addField("Year's High", millify.default(quote_data["yearHigh"], {lowercase: true}), true)
+            .addField("Market Cap", millify.default(quote_data["marketCap"], {precision: 1, lowercase: true}), true)
+            .addField("Price Avg 50", millify.default(quote_data["priceAvg50"], {precision: 1, lowercase: true}), true)
+            .addField("Price Avg 200", millify.default(quote_data["priceAvg200"], {precision: 1, lowercase: true}), true)
+            .addField("Volume", millify.default(quote_data["volume"], {precision: 1, lowercase: true}), true)
+            .addField('\u200B', '\u200B', true)
+            .addField("Average Volume", millify.default(quote_data["avgVolume"], {precision: 1, lowercase: true}), true);
 
-        let sent_msg = await msg.channel.send(messageEmbed);
-        startInterval(symbol, sent_msg);
-        setTimeout(() => {
-            if (intervalTimer) {
-                clearInterval(intervalTimer);
-            }
-        }, 60000);
+        let message = await msg.channel.send(messageEmbed);
+        let filter = r => {return r.emoji.name === '❌'};
+        message.react('❌').then(() => {
+            message.awaitReactions(filter, {timer: 5000}).then(c => {
+                console.log('c :>> ', c);
+                let timer_restarts = 100;
+                let resetTimer = () => {
+                    setTimeout(() => {
+                        console.log('collector.collected :>> ', c);
+                    }, 1000);
+                    if (--timer_restarts > 0)
+                        resetTimer();
+                };
+                resetTimer();
+            });
+        })
     });
 }
 
@@ -273,12 +214,12 @@ client.on('ready', () => {
 
 client.on('message', msg => { 
     if(msg.author.bot) return;
-    if (msg.content.substring(0, 1) !== '!') return;
+    if (msg.content.substring(0, 1) !== '?') return;
     let phrases = msg.content.substring(1).split(' ');
     let found_home = false;
     console.log('phrases :', phrases);
     if (phrases.length === 1 && phrases[0] === phrases[0].toUpperCase()) {
-        emulateTicker(phrases[0], msg);
+        getQuote(phrases[0], msg);
         found_home = true;
     }
     if (!found_home) {
@@ -288,18 +229,6 @@ client.on('message', msg => {
                 case 'cleanup':
                 case 'clean':
                     cleanup(msg);
-                    found_home = true;
-                    break;
-                case 'met':
-                case 'metrics':
-                case 'price':
-                case 'growth':
-                case 'valuation':
-                case 'margin':
-                case 'management':
-                case 'perShare':
-                case 'financialStrength':
-                    metrics(phrases, msg);
                     found_home = true;
                     break;
                 case 'fin':
