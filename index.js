@@ -9,7 +9,30 @@ global.document = document;
 var $ = jQuery = require('jquery')(window);
 const millify = require('millify');
 
-var intervalTimer = null;
+let createCloseButton = (msg) => {
+    let filter = r => {return r.emoji.name === '❌'};
+    msg.react('❌').then(reaction => {
+        const collector = msg.createReactionCollector(filter);
+        
+        let reactTimer = undefined;
+        reactTimer = setTimeout(() => {
+                collector.stop();
+        }, 120000);
+
+        collector.on('collect', r => {
+            if (r.count >= 2) {
+                collector.stop();
+                clearTimeout(reactTimer);
+            }
+        });
+        collector.on('end', r => {
+            if (collector.total >= 2) 
+                msg.delete();
+            else 
+                reaction.remove();
+        });
+    });
+}
 
 let cleanup = (msg) => {
     msg.channel.messages.fetch().then(message_map => {
@@ -56,7 +79,7 @@ let financials = (words, msg) => {
         }
     });
     if (symbol) {
-        $.get(`https://financialmodelingprep.com/api/v3/financials/${statement ? statement : 'balance-sheet-statement'}/${symbol}${frequency ? '?period=' + frequency : ''}`, data =>{
+        $.get(`https://financialmodelingprep.com/api/v3/financials/${statement ? statement : 'balance-sheet-statement'}/${symbol}${frequency ? '?period=' + frequency : ''}`, async data =>{
             if (data && data.symbol && data.financials) {
                 if (statement) statement = statement.split('-').join(' ');
                 let intro_string = `Here are ${symbol}'s latest ${frequency ? 'quarterly' : 'yearly'} financials:`;
@@ -88,7 +111,8 @@ let financials = (words, msg) => {
                 }
 
                 // msg.channel.send(intro_string);
-                msg.channel.send(messageEmbed);
+                let sent_message = await msg.channel.send(messageEmbed);
+                createCloseButton(sent_message);
             }
         });
     }
@@ -189,22 +213,8 @@ var getQuote = (symbol, msg) => {
             .addField('\u200B', '\u200B', true)
             .addField("Average Volume", millify.default(quote_data["avgVolume"], {precision: 1, lowercase: true}), true);
 
-        let message = await msg.channel.send(messageEmbed);
-        let filter = r => {return r.emoji.name === '❌'};
-        message.react('❌').then(() => {
-            message.awaitReactions(filter, {timer: 5000}).then(c => {
-                console.log('c :>> ', c);
-                let timer_restarts = 100;
-                let resetTimer = () => {
-                    setTimeout(() => {
-                        console.log('collector.collected :>> ', c);
-                    }, 1000);
-                    if (--timer_restarts > 0)
-                        resetTimer();
-                };
-                resetTimer();
-            });
-        })
+        let sent_message = await msg.channel.send(messageEmbed);
+        createCloseButton(sent_message);
     });
 }
 
