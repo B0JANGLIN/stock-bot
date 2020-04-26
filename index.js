@@ -218,6 +218,32 @@ var getQuote = (symbol, msg) => {
     });
 }
 
+var getCommands = (msg) => {
+    let cmdinfo = `\`\`\`
+function examples:\n
+\n
+*** stock symbols must be capitalized ***\n
+\n
+* Magic 8 ball\n
+  ex: ?8 Gonna make some sweet tendies today?\n
+  \n
+* Stock Quotes\n
+  ex: ?TSLA\n
+  \n
+* Company financials (defaults to yearly)\n
+  1. balance sheet\n
+    a. ?TSLA bs quarterly\n
+    b. ?balancesheet TSLA year\n
+  2. income\n
+    a. ?TSLA income quarter\n
+    b. ?ic TSLA\n
+  3. cash flow\n
+    a. ?TSLA cashflow q\n
+    b. ?TSLA cf\n
+    \`\`\``;
+    msg.channel.send(cmdinfo);
+}
+
 client.on('ready', () => {
     console.log('all logged in!!!!');
 });
@@ -256,6 +282,10 @@ client.on('message', msg => {
                 case 'earn':
                 case 'earnings':
                     earnings(phrases, msg);
+                    found_home = true;
+                    break;
+                case 'cmd':
+                    getCommands(msg);
                     found_home = true;
                     break;
                 case '8':
