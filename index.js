@@ -9,12 +9,14 @@ global.document = document;
 var $ = jQuery = require('jquery')(window);
 const millify = require('millify');
 
-let createCloseButton = (msg) => {
+let createCloseButton = async (msg) => {
     let filter = r => {return r.emoji.name === '❌'};
-    msg.react('❌').then(reaction => {
+    
         const collector = msg.createReactionCollector(filter);
-        
+        let reaction = await msg.react('❌');
+
         let reactTimer = undefined;
+        
         reactTimer = setTimeout(() => {
                 collector.stop();
         }, 120000);
@@ -31,7 +33,6 @@ let createCloseButton = (msg) => {
             else 
                 reaction.remove();
         });
-    });
 }
 
 let cleanup = (msg) => {
@@ -59,6 +60,7 @@ let financials = (words, msg) => {
         else {
             switch (word) {
                 case 'balancesheet':
+                case 'balance':
                 case 'bs':
                     statement = 'balance-sheet-statement';
                     break;
@@ -71,7 +73,6 @@ let financials = (words, msg) => {
                     statement = 'cash-flow-statement';
                     break;
                 case 'q':
-                case 'quart':
                 case 'quarter':
                 case 'quarterly':
                     frequency = 'quarter';
@@ -218,30 +219,19 @@ var getQuote = (symbol, msg) => {
     });
 }
 
-var getCommands = (msg) => {
-    let cmdinfo = `\`\`\`
-function examples:\n
-\n
-*** stock symbols must be capitalized ***\n
-\n
-* Magic 8 ball\n
-  ex: ?8 Gonna make some sweet tendies today?\n
-  \n
-* Stock Quotes\n
-  ex: ?TSLA\n
-  \n
-* Company financials (defaults to yearly)\n
-  1. balance sheet\n
-    a. ?TSLA bs quarterly\n
-    b. ?balancesheet TSLA year\n
-  2. income\n
-    a. ?TSLA income quarter\n
-    b. ?ic TSLA\n
-  3. cash flow\n
-    a. ?TSLA cashflow q\n
-    b. ?TSLA cf\n
-    \`\`\``;
-    msg.channel.send(cmdinfo);
+var getCommands = async (msg) => {
+    const messageEmbed = new Discord.MessageEmbed()
+            .setColor('#0099ff')
+            .setTitle(`Function Examples: `)
+            .setDescription(`*** stock symbols must be capitalized ***`)
+            .addField(`Magic 8 ball`, 'ex: ?8 Gonna make some sweet tendies today?', false)
+            .addField("Stock Quotes", 'ex: ?TSLA', false)
+            .addField('Company Financials', '(defaults to yearly)', false)
+            .addField('Balance Sheet', '?TSLA [balancesheet | balance | bs] q|uarter|ly', true)
+            .addField('Income Statement', '?TSLA [income | ic] q|uarter|ly', true)
+            .addField('Cash Flow', '?TSLA [cashflow | cf] q|uarter|ly', true)
+    let sent_message = await msg.channel.send(messageEmbed);
+    createCloseButton(sent_message);
 }
 
 client.on('ready', () => {
@@ -254,10 +244,6 @@ client.on('message', msg => {
     let phrases = msg.content.substring(1).split(' ');
     let found_home = false;
     console.log('phrases :', phrases);
-    if (phrases.length === 1 && phrases[0] === phrases[0].toUpperCase()) {
-        getQuote(phrases[0], msg);
-        found_home = true;
-    }
     if (!found_home) {
         for (let i = 0; i < phrases.length; i++) {
             let word = phrases[i];
@@ -270,6 +256,7 @@ client.on('message', msg => {
                 case 'fin':
                 case 'financials':
                 case 'balancesheet':
+                case 'balance':
                 case 'bs':
                 case 'income':
                 case 'ic':
@@ -285,6 +272,12 @@ client.on('message', msg => {
                     found_home = true;
                     break;
                 case 'cmd':
+                case 'c':
+                case 'command':
+                case 'commands':
+                case 'function':
+                case 'functions':
+                case 'help':
                     getCommands(msg);
                     found_home = true;
                     break;
@@ -294,6 +287,11 @@ client.on('message', msg => {
                     break;
             }
             if (found_home) i = phrases.length;
+        }
+        let reg = /^[A-Z]+$/;
+        if (phrases.length === 1 && reg.test(phrases[0])) {
+            getQuote(phrases[0], msg);
+            found_home = true;
         }
     }
     if (!found_home) {
