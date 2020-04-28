@@ -19,7 +19,7 @@ let createCloseButton = async (msg) => {
         
         reactTimer = setTimeout(() => {
                 collector.stop();
-        }, 1200);
+        }, 120000);
 
         collector.on('collect', r => {
             if (r.count >= 2) {
