@@ -19,7 +19,7 @@ let createCloseButton = async (msg) => {
         
         reactTimer = setTimeout(() => {
                 collector.stop();
-        }, 120000);
+        }, 1200);
 
         collector.on('collect', r => {
             if (r.count >= 2) {
@@ -28,7 +28,7 @@ let createCloseButton = async (msg) => {
             }
         });
         collector.on('end', r => {
-            if (collector.total >= 2) 
+            if (collector.total >= 3) 
                 msg.delete();
             else 
                 reaction.remove();
@@ -90,7 +90,6 @@ let financials = (words, msg) => {
                 const messageEmbed = new Discord.MessageEmbed()
                 .setColor('#0099ff')
                 .setTitle(`${symbol}'s latest ${frequency ? 'quarterly' : 'yearly'} financials:`)
-                // .setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
                 .setDescription(`Data from ${financialData['date']} ${statement ? statement : 'balance sheet'}`)
                 .setTimestamp()
                 .setFooter(`I love you`, 'https://cdn.discordapp.com/icons/687054731293884437/a8ea2f71aa8915f20a676989e5c7bd91.png?size=128');
@@ -119,14 +118,20 @@ let financials = (words, msg) => {
     }
 }
 
-var magic = (msg) => {
+var magic = async (msg) => {
+    let msg_text = msg.content;
+    if (msg_text.substring(0, 2) === '?8') msg_text = msg_text.substring(2);
     let outcome = Math.floor(Math.random() * Math.floor(21));
+    let emoji = '';
     switch (outcome) {
         case 0:
             msg.reply('It is certain.');
             break;
         case 1:
-            msg.reply('It is decidedly so.');
+            emoji = msg.guild.emojis.cache.find(emoji => emoji.name === 'whomans');
+            if (!emoji) emoji = 'It is decidedly so.';
+            else emoji = `${emoji}`;
+            msg.reply(emoji);
             break;
         case 2:
             msg.reply('Without a doubt.');
@@ -135,25 +140,36 @@ var magic = (msg) => {
             msg.reply('Yes – definitely.');
             break;
         case 4:
-            msg.reply('You may rely on it.');
+            emoji = msg.guild.emojis.cache.find(emoji => emoji.name === 'yeet');
+            if (!emoji) emoji = 'yeet.';
+            else emoji = `${emoji}`;
+            msg.reply(emoji);
             break;
         case 5:
-            msg.reply('As I see it, yes.');
+            msg.reply('*winks and finger guns*');
             break;
         case 6:
             msg.reply('Most likely.');
             break;
         case 7:
-            msg.reply('Outlook good.');
+            msg_text = msg_text.toLowerCase();
+            let text = '';
+            for (let i = 0; i < msg_text.length; i++) {
+                text += i % 2 === 1 ? msg_text[i].toUpperCase() : msg_text[i].toLowerCase();
+            }
+            emoji = msg.guild.emojis.cache.find(emoji => emoji.name === 'sPoNgE');
+            if (!emoji) emoji = '';
+            else emoji = ` ${emoji} `;
+            msg.reply(emoji + text + emoji);
             break;
         case 8:
             msg.reply('Yes.');
             break;
         case 9:
-            msg.reply('Signs point to yes.');
+            msg.reply('Yumps.');
             break;
         case 10:
-            msg.reply('Reply hazy, try again.');
+            msg.reply("I'm too high to drive to the devil's house.");
             break;
         case 11:
             msg.reply('Ask again later.');
@@ -162,10 +178,10 @@ var magic = (msg) => {
             msg.reply('Better not tell you now.');
             break;
         case 13:
-            msg.reply('Cannot predict now.');
+            msg.reply('Leave me alone with your garbage questions.');
             break;
         case 14:
-            msg.reply('Concentrate and ask again.');
+            msg.reply('Be better and ask again.');
             break;
         case 15:
             msg.reply('Don’t count on it.');
