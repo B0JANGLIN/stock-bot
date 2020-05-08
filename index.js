@@ -329,29 +329,22 @@ var identify = (words, msg) => {
 var news = (words, msg) => {
 
     words = words.filter(x => {return x !== 'news'});
-    if (words && words.length) query = `https://newsapi.org/v2/everything?q=${words.join('+')}&apiKey=${auth.newsapi_key}`;
-    else query = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${auth.newsapi_key}`;
+
+    let query = `https://gnews.io/api/v3/top-news?token=${auth.gnews_key}`;
+    if (words.length) query = `https://gnews.io/api/v3/search?q=${words.join('+')}&max=3&token=${auth.gnews_key}`;
 
     $.get(query, async data => {
-        if (data && data.totalResults) {
+        if (data && data.articles && data.articles.length) {
             let articles = data.articles;
-            let article = articles[0];
-            let parsedDescription = $(`<div>${article.description}</div>`).text();
-            const messageEmbed = new Discord.MessageEmbed()
-                .setTitle(article.title)
-                .setDescription(parsedDescription.toString())
-                .setURL(article.url);
-            if (article.urlToImage && article.urlToImage.length) {
-                messageEmbed.setImage(article.urlToImage);
+            for (let i = 0; i < 3; i++) {
+                let article = articles[i];
+                if (article) {
+                    let m = {"embed": {"description": `[${article.title}](${article.url})`}};
+                    msg.channel.send(m);
+                }
             }
-            if (article.publishedAt) {
-                let date = new Date(article.publishedAt);
-                messageEmbed.setFooter(date.toLocaleString());
-            }
-            let sent_message = await msg.channel.send(messageEmbed);
-            createCloseButton(sent_message);
         } else {
-            msg.channel.send(`I couldn't find that one. Try this: http://news.google.com/news?q=${words.join('+')}`);
+            msg.channel.send({"embed": {"description": `[I couldn't find that one. Try this.](http://news.google.com/news?q=${words.join('+')} "http://news.google.com/news?q=${words.join('+')}")`}});
         }
     });
 }
