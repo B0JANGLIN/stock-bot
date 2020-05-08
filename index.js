@@ -9,6 +9,85 @@ global.document = document;
 var $ = jQuery = require('jquery')(window);
 const millify = require('millify');
 
+client.on('ready', () => {
+    console.log('all logged in!!!!');
+});
+
+client.on('message', msg => { 
+    if (msg.author.bot) return;
+    if (msg.content.substring(0, 1) !== '.') return;
+    let phrases = msg.content.substring(1).split(' ');
+    let found_home = false;
+    console.log('phrases :', phrases);
+    if (!found_home) {
+        for (let i = 0; i < phrases.length; i++) {
+            let word = phrases[i];
+            switch(word) {
+                case 'cleanup':
+                case 'clean':
+                    cleanup(msg);
+                    found_home = true;
+                    break;
+                case 'fin':
+                case 'financials':
+                case 'balancesheet':
+                case 'balance':
+                case 'bs':
+                case 'income':
+                case 'ic':
+                case 'cashflow':
+                case 'cf':
+                    financials(phrases, msg);
+                    found_home = true;
+                    break;
+                case 'e':
+                case 'earn':
+                case 'earnings':
+                    earnings(phrases, msg);
+                    found_home = true;
+                    break;
+                case 'news':
+                    news(phrases, msg);
+                    found_home = true;
+                    break;
+                case 'whats':
+                case 'what':
+                case 'whos':
+                case 'who':
+                    identify(phrases, msg);
+                    found_home = true;
+                    break;
+                case 'cmd':
+                case 'c':
+                case 'command':
+                case 'commands':
+                case 'function':
+                case 'functions':
+                case 'help':
+                    getCommands(msg);
+                    found_home = true;
+                    break;
+                case '8':
+                    magic(msg);
+                    found_home = true;
+                    break;
+            }
+            if (found_home) i = phrases.length;
+        }
+        let reg = /^[A-Z]+$/;
+        if (phrases.length === 1 && reg.test(phrases[0])) {
+            getQuote(phrases[0], msg);
+            found_home = true;
+        }
+    }
+    // if (!found_home) {
+    //     msg.reply(`I couldn't figure that one out`);
+    // }
+});
+
+client.login(auth.token);
+
+
 let createCloseButton = async (msg) => {
     let filter = r => {return r.emoji.name === '❌'};
     
@@ -28,7 +107,7 @@ let createCloseButton = async (msg) => {
             }
         });
         collector.on('end', r => {
-            if (collector.total >= 3) 
+            if (collector.total >= 2) 
                 msg.delete();
             else 
                 reaction.remove();
@@ -42,7 +121,7 @@ let cleanup = (msg) => {
             let snowflake = items[0];
             console.log(`deleting message:: ${snowflake}`);
             let message = items[1];
-            if (message.content.substring(0, 1) === '?' || message.author.bot) {
+            if (message.content.substring(0, 1) === '.' || message.author.bot) {
                 message.delete();
             }
         }
@@ -90,6 +169,7 @@ let financials = (words, msg) => {
                 const messageEmbed = new Discord.MessageEmbed()
                 .setColor('#0099ff')
                 .setTitle(`${symbol}'s latest ${frequency ? 'quarterly' : 'yearly'} financials:`)
+                // .setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
                 .setDescription(`Data from ${financialData['date']} ${statement ? statement : 'balance sheet'}`)
                 .setTimestamp()
                 .setFooter(`I love you`, 'https://cdn.discordapp.com/icons/687054731293884437/a8ea2f71aa8915f20a676989e5c7bd91.png?size=128');
@@ -118,20 +198,14 @@ let financials = (words, msg) => {
     }
 }
 
-var magic = async (msg) => {
-    let msg_text = msg.content;
-    if (msg_text.substring(0, 2) === '?8') msg_text = msg_text.substring(2);
+var magic = (msg) => {
     let outcome = Math.floor(Math.random() * Math.floor(21));
-    let emoji = '';
     switch (outcome) {
         case 0:
             msg.reply('It is certain.');
             break;
         case 1:
-            emoji = msg.guild.emojis.cache.find(emoji => emoji.name === 'whomans');
-            if (!emoji) emoji = 'It is decidedly so.';
-            else emoji = `${emoji}`;
-            msg.reply(emoji);
+            msg.reply('It is decidedly so.');
             break;
         case 2:
             msg.reply('Without a doubt.');
@@ -140,36 +214,25 @@ var magic = async (msg) => {
             msg.reply('Yes – definitely.');
             break;
         case 4:
-            emoji = msg.guild.emojis.cache.find(emoji => emoji.name === 'yeet');
-            if (!emoji) emoji = 'yeet.';
-            else emoji = `${emoji}`;
-            msg.reply(emoji);
+            msg.reply('You may rely on it.');
             break;
         case 5:
-            msg.reply('*winks and finger guns*');
+            msg.reply('As I see it, yes.');
             break;
         case 6:
             msg.reply('Most likely.');
             break;
         case 7:
-            msg_text = msg_text.toLowerCase();
-            let text = '';
-            for (let i = 0; i < msg_text.length; i++) {
-                text += i % 2 === 1 ? msg_text[i].toUpperCase() : msg_text[i].toLowerCase();
-            }
-            emoji = msg.guild.emojis.cache.find(emoji => emoji.name === 'sPoNgE');
-            if (!emoji) emoji = '';
-            else emoji = ` ${emoji} `;
-            msg.reply(emoji + text + emoji);
+            msg.reply('Outlook good.');
             break;
         case 8:
             msg.reply('Yes.');
             break;
         case 9:
-            msg.reply('Yumps.');
+            msg.reply('Signs point to yes.');
             break;
         case 10:
-            msg.reply("I'm too high to drive to the devil's house.");
+            msg.reply('Reply hazy, try again.');
             break;
         case 11:
             msg.reply('Ask again later.');
@@ -178,10 +241,10 @@ var magic = async (msg) => {
             msg.reply('Better not tell you now.');
             break;
         case 13:
-            msg.reply('Leave me alone with your garbage questions.');
+            msg.reply('Cannot predict now.');
             break;
         case 14:
-            msg.reply('Be better and ask again.');
+            msg.reply('Concentrate and ask again.');
             break;
         case 15:
             msg.reply('Don’t count on it.');
@@ -235,6 +298,64 @@ var getQuote = (symbol, msg) => {
     });
 }
 
+var identify = (words, msg) => {
+    let symbol = null;
+    words.forEach(word => {
+        if (word === word.toUpperCase())
+            symbol = word;
+    });
+    if (symbol) {
+        $.get(`https://financialmodelingprep.com/api/v3/company/profile/${symbol}`, async data => {
+            if (data && Object.keys(data).length) {
+                let profile = data.profile;
+                const messageEmbed = new Discord.MessageEmbed()
+                    .setTitle(`${profile.companyName} (${data.symbol})`)
+                    .setDescription(profile.description)
+                    .setURL(`https://www.google.com/search?q=who+is+stock+${symbol}`);
+                if (profile.image && profile.image.length) {
+                    messageEmbed.setThumbnail(profile.image);
+                }
+                let sent_message = await msg.channel.send(messageEmbed);
+                createCloseButton(sent_message);
+            } else {
+                msg.channel.send(`I couldn't find that one. Try this: https://www.google.com/search?q=who+is+stock+${symbol}`);
+            }
+        });
+    } else {
+        msg.channel.send(`I didn't see a stock symbol there. Make sure you capitalize the symbols.`);
+    }
+}
+
+var news = (words, msg) => {
+
+    words = words.filter(x => {return x !== 'news'});
+    if (words && words.length) query = `https://newsapi.org/v2/everything?q=${words.join('+')}&apiKey=${auth.newsapi_key}`;
+    else query = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${auth.newsapi_key}`;
+
+    $.get(query, async data => {
+        if (data && data.totalResults) {
+            let articles = data.articles;
+            let article = articles[0];
+            let parsedDescription = $(`<div>${article.description}</div>`).text();
+            const messageEmbed = new Discord.MessageEmbed()
+                .setTitle(article.title)
+                .setDescription(parsedDescription.toString())
+                .setURL(article.url);
+            if (article.urlToImage && article.urlToImage.length) {
+                messageEmbed.setImage(article.urlToImage);
+            }
+            if (article.publishedAt) {
+                let date = new Date(article.publishedAt);
+                messageEmbed.setFooter(date.toLocaleString());
+            }
+            let sent_message = await msg.channel.send(messageEmbed);
+            createCloseButton(sent_message);
+        } else {
+            msg.channel.send(`I couldn't find that one. Try this: http://news.google.com/news?q=${words.join('+')}`);
+        }
+    });
+}
+
 var getCommands = async (msg) => {
     const messageEmbed = new Discord.MessageEmbed()
             .setColor('#0099ff')
@@ -245,74 +366,8 @@ var getCommands = async (msg) => {
             .addField('Company Financials', '(defaults to yearly)', false)
             .addField('Balance Sheet', '?TSLA [balancesheet | balance | bs] q|uarter|ly', true)
             .addField('Income Statement', '?TSLA [income | ic] q|uarter|ly', true)
-            .addField('Cash Flow', '?TSLA [cashflow | cf] q|uarter|ly', true)
-    let sent_message = await msg.channel.send(messageEmbed);
-    createCloseButton(sent_message);
+            .addField('Cash Flow', '?TSLA [cashflow | cf] q|uarter|ly', true);
+    let DM = await msg.author.createDM();
+    DM.send(messageEmbed);
+    msg.react('✅');
 }
-
-client.on('ready', () => {
-    console.log('all logged in!!!!');
-});
-
-client.on('message', msg => { 
-    if(msg.author.bot) return;
-    if (msg.content.substring(0, 1) !== '?') return;
-    let phrases = msg.content.substring(1).split(' ');
-    let found_home = false;
-    console.log('phrases :', phrases);
-    if (!found_home) {
-        for (let i = 0; i < phrases.length; i++) {
-            let word = phrases[i];
-            switch(word) {
-                case 'cleanup':
-                case 'clean':
-                    cleanup(msg);
-                    found_home = true;
-                    break;
-                case 'fin':
-                case 'financials':
-                case 'balancesheet':
-                case 'balance':
-                case 'bs':
-                case 'income':
-                case 'ic':
-                case 'cashflow':
-                case 'cf':
-                    financials(phrases, msg);
-                    found_home = true;
-                    break;
-                case 'e':
-                case 'earn':
-                case 'earnings':
-                    earnings(phrases, msg);
-                    found_home = true;
-                    break;
-                case 'cmd':
-                case 'c':
-                case 'command':
-                case 'commands':
-                case 'function':
-                case 'functions':
-                case 'help':
-                    getCommands(msg);
-                    found_home = true;
-                    break;
-                case '8':
-                    magic(msg);
-                    found_home = true;
-                    break;
-            }
-            if (found_home) i = phrases.length;
-        }
-        let reg = /^[A-Z]+$/;
-        if (phrases.length === 1 && reg.test(phrases[0])) {
-            getQuote(phrases[0], msg);
-            found_home = true;
-        }
-    }
-    if (!found_home) {
-        msg.reply(`I couldn't figure that one out`);
-    }
-});
-
-client.login(auth.token);
