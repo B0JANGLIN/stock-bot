@@ -57,6 +57,10 @@ client.on('message', msg => {
                     identify(phrases, msg);
                     found_home = true;
                     break;
+                case 'poll':
+                    poll(phrases, msg);
+                    found_home = true;
+                    break;
                 case 'cmd':
                 case 'c':
                 case 'command':
@@ -336,16 +340,90 @@ var news = (words, msg) => {
     $.get(query, async data => {
         if (data && data.articles && data.articles.length) {
             let articles = data.articles;
+            let embeds = [];
             for (let i = 0; i < 3; i++) {
                 let article = articles[i];
                 if (article) {
-                    let m = {"embed": {"description": `[${article.title}](${article.url})`}};
-                    msg.channel.send(m);
+                    let date = new Date(article.publishedAt);
+                    embeds.push(new Discord.MessageEmbed()
+                        .addField(date.toDateString(), `[${article.title}](${article.url})`)
+                    );
                 }
             }
+            msg.channel.createWebhook('stock-bot news')
+                .then(w => w.send({embeds: embeds}));
         } else {
             msg.channel.send({"embed": {"description": `[I couldn't find that one. Try this.](http://news.google.com/news?q=${words.join('+')} "http://news.google.com/news?q=${words.join('+')}")`}});
         }
+    });
+}
+
+var poll = (words, msg) => {
+
+    const prep_message = new Discord.MessageEmbed();
+
+    prep_message.setTitle('Poll')
+        .addField('\u200B', ':Green today? 👍:', false)
+        .addField('\u200B', 'Red today? 👎:', false)
+        .addField('\u200B', 'No trades or even ✖:', false)
+        .addField('\u200B', 'Total: 0', false);
+
+    msg.channel.send(prep_message).then(async sent_message => {
+        sent_message.react('👍').then( () => {
+            sent_message.react('👎').then( () => {
+                sent_message.react('✖').then( () => {
+                
+                    let filter = r => {return true};//['👍','👎','✖'].includes(r.emoji.name)};
+                    const collector = sent_message.createReactionCollector(filter);
+
+                    let all_votes = [];
+                    let green = 0;
+                    let red = 0;
+                    let neither = 1;
+                    let total = 1;
+                    
+                    let calculateTotals = async () => {
+                        green = all_votes.filter(v => {return v.vote === 1}).length;
+                        red = all_votes.filter(v => {return v.vote === 0}).length;
+                        neither = all_votes.filter(v => {return v.vote === -1}).length;
+                        total = all_votes.length;
+                        return;
+                    };
+                    let editFields = () => {
+                        const m = new Discord.MessageEmbed()
+                            .setTitle('Poll')
+                            .addField('\u200B', `Green today? 👍: ${((green / total) * 100).valueOf() + '%'}`, false)
+                            .addField('\u200B', `Red today? 👎: ${((red / total) * 100).valueOf() + '%'}`, false)
+                            .addField('\u200B', `No trades or even ✖: ${((neither / total) * 100).valueOf() + '%'}`, false)
+                            .addField('\u200B', `Total: ${total}`, false);
+                        sent_message.edit(m);
+                    };
+                    setTimeout(() => {
+                            collector.stop();
+                    }, 3600000 /* 1 hour */);
+            
+                    collector.on('collect', async (r,u) => {
+                        if (u.bot) return;
+                        let user = u.id;
+                        let vote = r.emoji.name === '👍' ? 1 : r.emoji.name === '👎' ? 0 : -1;
+                        if (all_votes.length && all_votes.find(x => {return x.user === user})) { //reacted already
+                            all_votes.find(x => {return x.user === user}).vote = vote;
+                        } else { //new user reaction
+                            all_votes.push({user, vote});
+                        }
+                        await calculateTotals();
+                        editFields();
+                    });
+                    collector.on('end', r => {
+                        reaction_1.remove();
+                        reaction_2.remove();
+                        reaction_3.remove();
+                    });
+                });
+            });
+        });
+
+        
     });
 }
 
@@ -354,12 +432,12 @@ var getCommands = async (msg) => {
             .setColor('#0099ff')
             .setTitle(`Function Examples: `)
             .setDescription(`*** stock symbols must be capitalized ***`)
-            .addField(`Magic 8 ball`, 'ex: ?8 Gonna make some sweet tendies today?', false)
-            .addField("Stock Quotes", 'ex: ?TSLA', false)
+            .addField(`Magic 8 ball`, 'ex: .8 Gonna make some sweet tendies today?', false)
+            .addField("Stock Quotes", 'ex: .TSLA', false)
             .addField('Company Financials', '(defaults to yearly)', false)
-            .addField('Balance Sheet', '?TSLA [balancesheet | balance | bs] q|uarter|ly', true)
-            .addField('Income Statement', '?TSLA [income | ic] q|uarter|ly', true)
-            .addField('Cash Flow', '?TSLA [cashflow | cf] q|uarter|ly', true);
+            .addField('Balance Sheet', '.TSLA [balancesheet | balance | bs] q|uarter|ly', true)
+            .addField('Income Statement', '.TSLA [income | ic] q|uarter|ly', true)
+            .addField('Cash Flow', '.TSLA [cashflow | cf] q|uarter|ly', true);
     let DM = await msg.author.createDM();
     DM.send(messageEmbed);
     msg.react('✅');
