@@ -38,6 +38,7 @@ client.on('message', msg => {
                 case 'cashflow':
                 case 'cf':
                     financials(phrases, msg);
+                    console.dir(`routing to (financials) based on keyword [${word}]`);
                     found_home = true;
                     break;
                 case 'e':
@@ -48,6 +49,7 @@ client.on('message', msg => {
                     break;
                 case 'news':
                     news(phrases, msg);
+                    console.dir(`routing to (news) based on keyword [${word}]`);
                     found_home = true;
                     break;
                 case 'whats':
@@ -55,10 +57,12 @@ client.on('message', msg => {
                 case 'whos':
                 case 'who':
                     identify(phrases, msg);
+                    console.dir(`routing to (identify) based on keyword [${word}]`);
                     found_home = true;
                     break;
                 case 'poll':
                     poll(phrases, msg);
+                    console.dir(`routing to (poll) based on keyword [${word}]`);
                     found_home = true;
                     break;
                 case 'cmd':
@@ -69,19 +73,23 @@ client.on('message', msg => {
                 case 'functions':
                 case 'help':
                     getCommands(msg);
+                    console.dir(`routing to (getCommands) based on keyword [${word}]`);
                     found_home = true;
                     break;
                 case '8':
                     magic(msg);
+                    console.dir(`routing to (magic) based on keyword [${word}]`);
                     found_home = true;
                     break;
+                default:
+                    let reg = /^[A-Za-z]+$/;
+                    if (phrases.length === 1 && reg.test(phrases[0])) {
+                        getQuote(phrases[0].toUpperCase(), msg);
+                        found_home = true;
+                    }
+
             }
             if (found_home) i = phrases.length;
-        }
-        let reg = /^[A-Z]+$/;
-        if (phrases.length === 1 && reg.test(phrases[0])) {
-            getQuote(phrases[0], msg);
-            found_home = true;
         }
     }
     // if (!found_home) {
@@ -162,21 +170,30 @@ let financials = (words, msg) => {
             }
         }
     });
+    if (symbol === null) {
+        words.forEach(word => {
+            if (['fin','financials','balancesheet','balance','bs','income','ic','cashflow','cf','q','quarter','quarterly'].includes(word))
+                words = words.filter(x => {return x !== word});
+            else
+                symbol = word.toUpperCase();
+        });
+    }
     if (symbol) {
         $.get(`https://financialmodelingprep.com/api/v3/financials/${statement ? statement : 'balance-sheet-statement'}/${symbol}${frequency ? '?period=' + frequency : ''}`, async data =>{
             if (data && data.symbol && data.financials) {
                 if (statement) statement = statement.split('-').join(' ');
                 let intro_string = `Here are ${symbol}'s latest ${frequency ? 'quarterly' : 'yearly'} financials:`;
                 let financialData = data.financials[0];
-                console.log('financialData :', financialData);
+                let date = new Date(financialData['date']);
+                let displayDate = `${date.getMonth()}/${date.getDay()}/${date.getYear()}`
+                // console.log('financialData :', financialData);
                 
                 const messageEmbed = new Discord.MessageEmbed()
-                .setColor('#0099ff')
-                .setTitle(`${symbol}'s latest ${frequency ? 'quarterly' : 'yearly'} financials:`)
-                // .setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
-                .setDescription(`Data from ${financialData['date']} ${statement ? statement : 'balance sheet'}`)
-                .setTimestamp()
-                .setFooter(`I love you`, 'https://cdn.discordapp.com/icons/687054731293884437/a8ea2f71aa8915f20a676989e5c7bd91.png?size=128');
+                    .setColor('#0099ff')
+                    .setTitle(`${symbol}'s latest ${frequency ? 'quarterly' : 'yearly'} financials:`)
+                    .setDescription(`Data from ${displayDate} ${statement ? statement : 'balance sheet'}`)
+                    .setTimestamp()
+                    .setFooter(`I love you`, 'https://cdn.discordapp.com/icons/687054731293884437/a8ea2f71aa8915f20a676989e5c7bd91.png?size=128');
 
                 for (let key in financialData) {
                     if (key !== 'date') {
@@ -199,6 +216,8 @@ let financials = (words, msg) => {
                 createCloseButton(sent_message);
             }
         });
+    } else {
+        msg.channel.send(`Sorry I couldn't find that one. Please try again.`);
     }
 }
 
@@ -308,6 +327,14 @@ var identify = (words, msg) => {
         if (word === word.toUpperCase())
             symbol = word;
     });
+    if (symbol === null) {
+        words.forEach(word => {
+            if (['whats','what','whos','who'].includes(word))
+                words = words.filter(x => {return x !== word});
+            else
+                symbol = word.toUpperCase();
+        })
+    }
     if (symbol) {
         $.get(`https://financialmodelingprep.com/api/v3/company/profile/${symbol}`, async data => {
             if (data && Object.keys(data).length) {
