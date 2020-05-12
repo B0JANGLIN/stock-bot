@@ -393,21 +393,21 @@ var poll = (words, msg) => {
         .addField('\u200B', ':Green today? 👍:', false)
         .addField('\u200B', 'Red today? 👎:', false)
         .addField('\u200B', 'No trades or even ✖:', false)
-        .addField('\u200B', 'Total: 0', false);
+        .addField('@here', 'Total: 0', false);
 
     msg.channel.send(prep_message).then(async sent_message => {
         sent_message.react('👍').then( () => {
             sent_message.react('👎').then( () => {
                 sent_message.react('✖').then( () => {
                 
-                    let filter = r => {return true};//['👍','👎','✖'].includes(r.emoji.name)};
+                    let filter = r => {return ['👍','👎','✖'].includes(r.emoji.name)};;
                     const collector = sent_message.createReactionCollector(filter);
 
                     let all_votes = [];
                     let green = 0;
                     let red = 0;
-                    let neither = 1;
-                    let total = 1;
+                    let neither = 0;
+                    let total = 0;
                     
                     let calculateTotals = async () => {
                         green = all_votes.filter(v => {return v.vote === 1}).length;
@@ -419,10 +419,10 @@ var poll = (words, msg) => {
                     let editFields = () => {
                         const m = new Discord.MessageEmbed()
                             .setTitle('Poll')
-                            .addField('\u200B', `Green today? 👍: ${((green / total) * 100).valueOf() + '%'}`, false)
-                            .addField('\u200B', `Red today? 👎: ${((red / total) * 100).valueOf() + '%'}`, false)
-                            .addField('\u200B', `No trades or even ✖: ${((neither / total) * 100).valueOf() + '%'}`, false)
-                            .addField('\u200B', `Total: ${total}`, false);
+                            .addField('\u200B', `Green today? 👍: ${((Math.round((green / total) * 100) * 100) / 100) + '%'}`, false)
+                            .addField('\u200B', `Red today? 👎: ${((Math.round((red / total) * 100) * 100) / 100) + '%'}`, false)
+                            .addField('\u200B', `No trades or even ✖: ${((Math.round((neither / total) * 100) * 100) / 100) + '%'}`, false)
+                            .addField('@here', `Total: ${total}`, false)
                         sent_message.edit(m);
                     };
                     setTimeout(() => {
