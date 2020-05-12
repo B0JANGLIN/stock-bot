@@ -228,7 +228,7 @@ var magic = (msg) => {
             msg.reply('It is certain.');
             break;
         case 1:
-            msg.reply('It is decidedly so.');
+            msg.reply('Sure...');
             break;
         case 2:
             msg.reply('Without a doubt.');
@@ -255,7 +255,7 @@ var magic = (msg) => {
             msg.reply('Signs point to yes.');
             break;
         case 10:
-            msg.reply('Reply hazy, try again.');
+            msg.reply(`That's a no from me dog.`);
             break;
         case 11:
             msg.reply('Ask again later.');
