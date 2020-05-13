@@ -37,8 +37,8 @@ client.on('message', msg => {
                 case 'ic':
                 case 'cashflow':
                 case 'cf':
-                    financials(phrases, msg);
                     console.dir(`routing to (financials) based on keyword [${word}]`);
+                    financials(phrases, msg);
                     found_home = true;
                     break;
                 case 'e':
@@ -48,21 +48,21 @@ client.on('message', msg => {
                     found_home = true;
                     break;
                 case 'news':
-                    news(phrases, msg);
                     console.dir(`routing to (news) based on keyword [${word}]`);
+                    news(phrases, msg);
                     found_home = true;
                     break;
                 case 'whats':
                 case 'what':
                 case 'whos':
                 case 'who':
-                    identify(phrases, msg);
                     console.dir(`routing to (identify) based on keyword [${word}]`);
+                    identify(phrases, msg);
                     found_home = true;
                     break;
                 case 'poll':
-                    poll(phrases, msg);
                     console.dir(`routing to (poll) based on keyword [${word}]`);
+                    poll(phrases, msg);
                     found_home = true;
                     break;
                 case 'cmd':
@@ -72,13 +72,13 @@ client.on('message', msg => {
                 case 'function':
                 case 'functions':
                 case 'help':
-                    getCommands(msg);
                     console.dir(`routing to (getCommands) based on keyword [${word}]`);
+                    getCommands(msg);
                     found_home = true;
                     break;
                 case '8':
-                    magic(msg);
                     console.dir(`routing to (magic) based on keyword [${word}]`);
+                    magic(msg);
                     found_home = true;
                     break;
                 default:
@@ -124,6 +124,48 @@ let createCloseButton = async (msg) => {
             else 
                 reaction.remove();
         });
+}
+
+let confirm = (text, msg, callbackConfirm, callbackDeny) => {
+    return new Promise((res, rej) => {
+        msg.channel.send(text).then(sent_message => {
+            sent_message.react('✔').then(() => {
+                sent_message.react('❌').then(() => {
+                    collector = sent_message.createReactionCollector(r => {return ['❌','✔'].includes(r.emoji.name)});
+                        
+                    let reactTimer = undefined;
+                    
+                    reactTimer = setTimeout(() => {
+                            collector.stop();
+                    }, 60000);
+    
+                    collector.on('collect', (r,u) => {
+                        console.log('u :>> ', u);
+                        if (u.bot) return;
+                        if (u.id !== msg.author.id) return;
+                        if (r.emoji.name === '✔') {
+                            console.dir('calling callbackConfirm');
+                            callbackConfirm();
+                            res();
+                        } else if (r.emoji.name === '❌') {
+                            if (callbackDeny) {
+                                console.dir('calling callbackDeny');
+                                callbackDeny();
+                                res();
+                            }
+                        }
+                        collector.stop();
+                    });
+                    collector.on('end', r => {
+                        console.dir('killing message and react collector');
+                        if (reactTimer)
+                            clearTimeout(reactTimer);
+                        sent_message.delete();
+                    });
+                });
+            });
+        });
+    });
 }
 
 let cleanup = (msg) => {
@@ -385,72 +427,134 @@ var news = (words, msg) => {
     });
 }
 
-var poll = (words, msg) => {
+var poll = async (words, msg) => {
 
-    const prep_message = new Discord.MessageEmbed();
+    let keyword_index = words.findIndex(x => {return x === 'poll'});
+    if (keyword_index === -1) return;
+    words = words.filter(x => {return x !== ' '});
+    words.splice(keyword_index, 1);
 
-    prep_message.setTitle('Poll')
-        .addField('\u200B', ':Green today? 👍:', false)
-        .addField('\u200B', 'Red today? 👎:', false)
-        .addField('\u200B', 'No trades or even ✖:', false)
-        .addField('@here', 'Total: 0', false);
+    let mention_everyone = undefined;
+    let title = "Did you end up Red or Green today?";
+    let fields = [
+        {name: `\u200B`, value: `👍 Green:`, percentage: ' 0%', emote: '👍'},
+        {name: `\u200B`, value: `👎 Red:`, percentage: ' 0%', emote: '👎'},
+        {name: `\u200B`, value: `✖ No trades / even:`, percentage: ' 0%', emote: '✖'}
+    ];
+    let votes = [];
+    let total = 0;
 
-    msg.channel.send(prep_message).then(async sent_message => {
-        sent_message.react('👍').then( () => {
-            sent_message.react('👎').then( () => {
-                sent_message.react('✖').then( () => {
-                
-                    let filter = r => {return ['👍','👎','✖'].includes(r.emoji.name)};;
-                    const collector = sent_message.createReactionCollector(filter);
+    if (words && words.length) {
+        title = "Red or Green tomorrow?"
+        fields = [
+            {name: `\u200B`, value: `👍 Green:`, percentage: ' 0%', emote: '👍'},
+            {name: `\u200B`, value: `👎 Red:`, percentage: ' 0%', emote: '👎'},
+            {name: `\u200B`, value: `✖ Sideways:`, percentage: ' 0%', emote: '✖'}
+        ];
+        if (words.length > 1) {
+            title = [];
+            fields = [];
+            let field_index = null;
+            let field_val = [];
+            let emote = '';
+            let snowflake = '';
 
-                    let all_votes = [];
-                    let green = 0;
-                    let red = 0;
-                    let neither = 0;
-                    let total = 0;
-                    
-                    let calculateTotals = async () => {
-                        green = all_votes.filter(v => {return v.vote === 1}).length;
-                        red = all_votes.filter(v => {return v.vote === 0}).length;
-                        neither = all_votes.filter(v => {return v.vote === -1}).length;
-                        total = all_votes.length;
-                        return;
-                    };
-                    let editFields = () => {
-                        const m = new Discord.MessageEmbed()
-                            .setTitle('Poll')
-                            .addField('\u200B', `Green today? 👍: ${((Math.round((green / total) * 100) * 100) / 100) + '%'}`, false)
-                            .addField('\u200B', `Red today? 👎: ${((Math.round((red / total) * 100) * 100) / 100) + '%'}`, false)
-                            .addField('\u200B', `No trades or even ✖: ${((Math.round((neither / total) * 100) * 100) / 100) + '%'}`, false)
-                            .addField('@here', `Total: ${total}`, false)
-                        sent_message.edit(m);
-                    };
-                    setTimeout(() => {
-                            collector.stop();
-                    }, 3600000 /* 1 hour */);
-            
-                    collector.on('collect', async (r,u) => {
-                        if (u.bot) return;
-                        let user = u.id;
-                        let vote = r.emoji.name === '👍' ? 1 : r.emoji.name === '👎' ? 0 : -1;
-                        if (all_votes.length && all_votes.find(x => {return x.user === user})) { //reacted already
-                            all_votes.find(x => {return x.user === user}).vote = vote;
-                        } else { //new user reaction
-                            all_votes.push({user, vote});
+            let discordReg = /^\<\:\w+\:\d+\>/;
+            let make_snowflake = /[^\d]+/g;
+            let emojiReg = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/;
+
+            for (let i = 0; i < words.length; i++) { // 25 is the maximum amount of fields allowed on a discord embed
+                const word = words[i];
+                if (discordReg.test(word) || emojiReg.test(word)) { // word is an emote - create a field, reset temp variables
+                    if (discordReg.test(word)) {
+                        snowflake = word.replace(make_snowflake, '');
+                    }
+                    if (field_index === null) {
+                        title = title.join(' ');
+                        field_index = 0;
+                    } else {
+                        field_index++;
+                        fields.push({name: `\u200B`, value: `${field_val.join(' ')}:`, percentage: ' 0%', emote});
+                    }
+                    field_val = [word];
+                    emote = discordReg.test(word) ? snowflake : word;
+                } else { // word is not an emote
+                    if (field_index === null) { // we are still getting the title worked out
+                        title.push(word);
+                    } else {
+                        field_val.push(word);
+                        if (i === words.length - 1) { // we have reached the end
+                            fields.push({name: `\u200B`, value: `${field_val.join(' ')}:`, percentage: ' 0%', emote: discordReg.test(word) ? snowflake : emote});
                         }
-                        await calculateTotals();
-                        editFields();
-                    });
-                    collector.on('end', r => {
-                        reaction_1.remove();
-                        reaction_2.remove();
-                        reaction_3.remove();
-                    });
-                });
-            });
-        });
+                    }
+                }
+            }
+        }
 
+    }
+
+    let start_poll = () => {
+
+        let prepMessage = () => {
+            const message = new Discord.MessageEmbed();
+            message.setTitle(title);
+            for (let i = 0; i < fields.length; i++) {
+                const field = fields[i];
+                message.addField(field.name, field.value + field.percentage, false);
+            }
+            message.addField(`Total votes: ${total}`, mention_everyone ? '@everyone' : '\u200B', false);
+            return message;
+        };
         
+        msg.channel.send(prepMessage()).then(sent_message => {
+    
+            for (let i = 0; i < fields.length; i++) {
+                const field = fields[i];
+                sent_message.react(field.emote);
+            }
+                    
+            let filter = r => {return true};// fields.map(f => f.emote).includes(r.emoji.name)};;
+            const collector = sent_message.createReactionCollector(filter);
+    
+            let calculateTotals = () => {
+                total = votes.length;
+                for (let i = 0; i < fields.length; i++) {
+                    const field = fields[i];
+                    let v = votes.filter(x => {return x.vote === i});
+                    let count = null;
+                    if (v && v.length) count = v.length;
+                    else count = 0;
+                    field.percentage = ` ${((Math.round((count / total) * 100) * 100) / 100)}%`;
+                }
+            };
+            setTimeout(() => {
+                    collector.stop();
+            }, 3600000 /* 1 hour */);
+    
+            collector.on('collect', async (r,u) => {
+                if (u.bot) return;
+                let user = u.id;
+                console.log('u :>> ', u);
+                let vote = fields.findIndex(f => {return f.emote === (r.emoji.id ? r.emoji.id : r.emoji.name)});
+    
+                if (votes.length && votes.find(x => {return x.user === user})) { // user reacted already
+                    votes.find(x => {return x.user === user}).vote = vote;
+                } else { //new user reaction
+                    votes.push({user, vote});
+                }
+                calculateTotals();
+                sent_message.edit(prepMessage());
+            });
+            collector.on('end', r => {
+                sent_message.reactions.removeAll();
+            });
+    
+            
+        });
+    }
+
+    confirm('Would you like to mention everyone?', msg, () => {mention_everyone = true}, () => {mention_everyone = false}).then(() => {
+        start_poll();
     });
 }
 
