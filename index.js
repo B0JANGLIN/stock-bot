@@ -460,7 +460,7 @@ var poll = async (words, msg) => {
             let snowflake = '';
 
             let discordReg = /^\<\:\w+\:\d+\>/;
-            let make_snowflake = /[^\d]+/g;
+            let make_snowflake = /[^a-zA-Z:<>][\d]{16,20}/g;
             let emojiReg = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/;
 
             for (let i = 0; i < words.length; i++) { // 25 is the maximum amount of fields allowed on a discord embed
