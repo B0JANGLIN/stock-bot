@@ -136,6 +136,7 @@ let confirm = (text, msg, callbackConfirm, callbackDeny) => {
                     let reactTimer = undefined;
                     
                     reactTimer = setTimeout(() => {
+                            console.dir('confirm::stopping collector');
                             collector.stop();
                     }, 60000);
     
@@ -144,12 +145,12 @@ let confirm = (text, msg, callbackConfirm, callbackDeny) => {
                         if (u.bot) return;
                         if (u.id !== msg.author.id) return;
                         if (r.emoji.name === '✔') {
-                            console.dir('calling callbackConfirm');
+                            console.dir('confirm::calling callbackConfirm');
                             callbackConfirm();
                             res();
                         } else if (r.emoji.name === '❌') {
                             if (callbackDeny) {
-                                console.dir('calling callbackDeny');
+                                console.dir('confirm::calling callbackDeny');
                                 callbackDeny();
                                 res();
                             }
@@ -157,7 +158,7 @@ let confirm = (text, msg, callbackConfirm, callbackDeny) => {
                         collector.stop();
                     });
                     collector.on('end', r => {
-                        console.dir('killing message and react collector');
+                        console.dir('confirm::killing message and react collector');
                         if (reactTimer)
                             clearTimeout(reactTimer);
                         sent_message.delete();
@@ -496,6 +497,7 @@ var poll = async (words, msg) => {
     let start_poll = () => {
 
         let prepMessage = () => {
+            console.dir('poll::start_poll::prepMessage');
             const message = new Discord.MessageEmbed();
             message.setTitle(title);
             for (let i = 0; i < fields.length; i++) {
@@ -517,6 +519,7 @@ var poll = async (words, msg) => {
             const collector = sent_message.createReactionCollector(filter);
     
             let calculateTotals = () => {
+                console.dir('poll::start_poll::calculateTotals');
                 total = votes.length;
                 for (let i = 0; i < fields.length; i++) {
                     const field = fields[i];
@@ -528,13 +531,14 @@ var poll = async (words, msg) => {
                 }
             };
             setTimeout(() => {
+                    console.dir('poll::start_poll::timeout triggered → stopping collector');
                     collector.stop();
             }, 3600000 /* 1 hour */);
     
             collector.on('collect', async (r,u) => {
                 if (u.bot) return;
                 let user = u.id;
-                console.log('u :>> ', u);
+                console.log('poll::start_poll::on::collect::reaction from ', u.username);
                 let vote = fields.findIndex(f => {return f.emote === (r.emoji.id ? r.emoji.id : r.emoji.name)});
     
                 if (votes.length && votes.find(x => {return x.user === user})) { // user reacted already
@@ -546,6 +550,7 @@ var poll = async (words, msg) => {
                 sent_message.edit(prepMessage());
             });
             collector.on('end', r => {
+                console.dir('poll::start_poll::on::end::collector ending. Removing all reactions');
                 sent_message.reactions.removeAll();
             });
     
