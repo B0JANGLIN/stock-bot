@@ -468,7 +468,10 @@ var poll = async (words, msg) => {
                 const word = words[i];
                 if (discordReg.test(word) || emojiReg.test(word)) { // word is an emote - create a field, reset temp variables
                     if (discordReg.test(word)) {
-                        snowflake = word.replace(make_snowflake, '');
+                        snowflake = word.replace('<', '');
+                        snowflake = snowflake.replace('>', '');
+                        snowflake = snowflake.split(':');
+                        snowflake = snowflake[snowflake.length -1];
                     }
                     if (field_index === null) {
                         title = title.join(' ');
@@ -538,8 +541,8 @@ var poll = async (words, msg) => {
             collector.on('collect', async (r,u) => {
                 if (u.bot) return;
                 let user = u.id;
-                console.log('poll::start_poll::on::collect::reaction from ', u.username);
                 let vote = fields.findIndex(f => {return f.emote === (r.emoji.id ? r.emoji.id : r.emoji.name)});
+                console.dir(`poll::start_poll::on::collect::${u.username} voted ${vote}${r.emoji.id ? ' using ' + r.emoji.name : ''}`);
     
                 if (votes.length && votes.find(x => {return x.user === user})) { // user reacted already
                     votes.find(x => {return x.user === user}).vote = vote;
