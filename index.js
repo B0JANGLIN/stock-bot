@@ -15,6 +15,8 @@ client.on('ready', () => {
 
 client.on('message', msg => { 
     if (msg.author.bot) return;
+    if (msg.mentions.has('683138332863103172')) 
+        return msg.channel.send('I know 😉');
     if (msg.content.substring(0, 1) !== '.') return;
     let phrases = msg.content.substring(1).split(' ');
     let found_home = false;
@@ -80,6 +82,10 @@ client.on('message', msg => {
                     console.dir(`routing to (magic) based on keyword [${word}]`);
                     magic(msg);
                     found_home = true;
+                    break;
+                case 'tell':
+                    console.dir(`routing to (tellem) based on keyword [${word}]`);
+                    tellem(phrases, msg)
                     break;
                 default:
                     let reg = /^[A-Za-z]+$/;
@@ -171,13 +177,17 @@ let confirm = (text, msg, callbackConfirm, callbackDeny) => {
 
 let cleanup = (msg) => {
     msg.channel.messages.fetch().then(message_map => {
-
+        let deleted_count = 0;
         for (let items of message_map) {
             let snowflake = items[0];
-            console.log(`deleting message:: ${snowflake}`);
             let message = items[1];
             if (message.content.substring(0, 1) === '.' || message.author.bot) {
+                console.log(`deleting message:: ${snowflake}`);
                 message.delete();
+                if (++deleted_count === 10) {
+                    console.dir('breaking');
+                    break;
+                }
             }
         }
     });
@@ -189,47 +199,53 @@ let financials = (words, msg) => {
     let frequency = null;
     let symbol = null;
     words.forEach(word => {
-        if (word === word.toUpperCase())
+        if (word === word.toUpperCase()) {
             symbol = word;
-        else {
+            words = words.filter(x => {return x !== word});
+        } else {
             switch (word) {
+                case 'fin':
+                case 'financial':
+                case 'financials':
+                    words = words.filter(x => {return x !== word});
+                    break;
                 case 'balancesheet':
                 case 'balance':
                 case 'bs':
                     statement = 'balance-sheet-statement';
+                    words = words.filter(x => {return x !== word});
                     break;
                 case 'income':
                 case 'ic':
                     statement = 'income-statement';
+                    words = words.filter(x => {return x !== word});
                     break;
                 case 'cashflow':
                 case 'cf':
                     statement = 'cash-flow-statement';
+                    words = words.filter(x => {return x !== word});
                     break;
                 case 'q':
                 case 'quarter':
                 case 'quarterly':
                     frequency = 'quarter';
+                    words = words.filter(x => {return x !== word});
+                    break;
+                default:
+                    if (symbol === null) {
+                        symbol = word.toUpperCase();
+                    }
+                    words = words.filter(x => {return x !== word});
             }
         }
     });
-    if (symbol === null) {
-        words.forEach(word => {
-            if (['fin','financials','balancesheet','balance','bs','income','ic','cashflow','cf','q','quarter','quarterly'].includes(word))
-                words = words.filter(x => {return x !== word});
-            else
-                symbol = word.toUpperCase();
-        });
-    }
     if (symbol) {
-        $.get(`https://financialmodelingprep.com/api/v3/financials/${statement ? statement : 'balance-sheet-statement'}/${symbol}${frequency ? '?period=' + frequency : ''}`, async data =>{
+        $.get(`https://financialmodelingprep.com/api/v3/financials/${statement ? statement : 'balance-sheet-statement'}/${symbol}${frequency ? '?period=' + frequency : ''}&apikey=${auth.fmp_key}`, async data =>{
             if (data && data.symbol && data.financials) {
                 if (statement) statement = statement.split('-').join(' ');
-                let intro_string = `Here are ${symbol}'s latest ${frequency ? 'quarterly' : 'yearly'} financials:`;
                 let financialData = data.financials[0];
                 let date = new Date(financialData['date']);
-                let displayDate = `${date.getMonth()}/${date.getDay()}/${date.getYear()}`
-                // console.log('financialData :', financialData);
+                let displayDate = `${date.getMonth()}/${date.getDay()}/${date.getYear()}`;
                 
                 const messageEmbed = new Discord.MessageEmbed()
                     .setColor('#0099ff')
@@ -265,6 +281,8 @@ let financials = (words, msg) => {
 }
 
 var magic = (msg) => {
+    let msg_text = msg.content;
+    if (msg_text.substring(0, 2) === '?8') msg_text = msg_text.substring(2);
     let outcome = Math.floor(Math.random() * Math.floor(21));
     switch (outcome) {
         case 0:
@@ -289,7 +307,15 @@ var magic = (msg) => {
             msg.reply('Most likely.');
             break;
         case 7:
-            msg.reply('Outlook good.');
+            let msg_text = phrases.join(' ').toLowerCase();
+            let text = '';
+            for (let i = 0; i < msg_text.length; i++) {
+                text += i % 2 === 1 ? msg_text[i].toUpperCase() : msg_text[i].toLowerCase();
+            }
+            emoji = msg.guild.emojis.cache.find(emoji => emoji.name === 'sponge');
+            if (!emoji) emoji = '';
+            else emoji = ` ${emoji} `;
+            msg.reply(emoji + text + emoji);
             break;
         case 8:
             msg.reply('Yes.');
@@ -337,7 +363,7 @@ var magic = (msg) => {
 
 var getQuote = (symbol, msg) => {
 
-    $.get(`https://financialmodelingprep.com/api/v3/quote/${symbol}`, async data => {
+    $.get(`https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${auth.fmp_key}`, async data => {
         let quote_data = data[0];
         
         const messageEmbed = new Discord.MessageEmbed()
@@ -379,7 +405,7 @@ var identify = (words, msg) => {
         })
     }
     if (symbol) {
-        $.get(`https://financialmodelingprep.com/api/v3/company/profile/${symbol}`, async data => {
+        $.get(`https://financialmodelingprep.com/api/v3/company/profile/${symbol}?apikey=${auth.fmp_key}`, async data => {
             if (data && Object.keys(data).length) {
                 let profile = data.profile;
                 const messageEmbed = new Discord.MessageEmbed()
@@ -563,6 +589,31 @@ var poll = async (words, msg) => {
 
     confirm('Would you like to mention everyone?', msg, () => {mention_everyone = true}, () => {mention_everyone = false}).then(() => {
         start_poll();
+    });
+}
+
+var tellem = async (words, msg) => {
+    let who = null;
+    for (let [index, word] of words.entries()) {
+        if (/<@\S*>/.test(word)) {
+            who = word;
+            for (let i = 0; i <= index; i++) {
+                words.shift();
+            }
+            break;
+        }
+    }
+    let msg_text = words.join(' ');
+    msg_text = msg_text.toLowerCase();
+    let text = '';
+    for (let i = 0; i < msg_text.length; i++) {
+        text += i % 2 === 1 ? msg_text[i].toUpperCase() : msg_text[i].toLowerCase();
+    }
+    emoji = msg.guild.emojis.cache.find(emoji => emoji.name === 'sponge');
+    if (!emoji) emoji = '';
+    else emoji = `${emoji}`;
+    msg.channel.send(`${who} ${emoji} ${text} ${emoji}`).then(sent_message => {
+        msg.delete();
     });
 }
 
