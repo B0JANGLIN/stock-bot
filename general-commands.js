@@ -1,4 +1,5 @@
 const auth = require('./auth.json');
+const Discord = require('discord.js');
 const MessageObjectFactory = require('./message-objects');
 var jsdom = require('jsdom');
 const { JSDOM } = jsdom;
@@ -401,7 +402,7 @@ class GeneralMessageHandler {
                 let emote = '';
                 let snowflake = '';
 
-                let discordReg = /^\<\:\w+\:\d+\>/;
+                let discordReg = /^\<a?\:\w+\:\d+\>/;
                 let make_snowflake = /[^a-zA-Z:<>][\d]{16,20}/g;
                 let emojiReg = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/;
 
@@ -453,7 +454,6 @@ class GeneralMessageHandler {
             };
             
             msg.channel.send(prepMessage()).then(sent_message => {
-        
                 for (let i = 0; i < fields.length; i++) {
                     const field = fields[i];
                     sent_message.react(field.emote);
