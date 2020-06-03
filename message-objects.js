@@ -33,7 +33,7 @@ class MessageObjectFactory {
             msg.channel.send(text).then(sent_message => {
                 sent_message.react('✔').then(() => {
                     sent_message.react('❌').then(() => {
-                        collector = sent_message.createReactionCollector(r => {return ['❌','✔'].includes(r.emoji.name)});
+                        let collector = sent_message.createReactionCollector(r => {return ['❌','✔'].includes(r.emoji.name)});
                             
                         let reactTimer = undefined;
                         
