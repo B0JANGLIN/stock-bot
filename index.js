@@ -23,7 +23,7 @@ client.on('message', msg => {
     }
 
     if (msg.mentions.has('683138332863103172') && !msg.mentions.everyone) 
-        return msg.channel.send('I know 😥');
+        return msg.channel.send(':)');
 
     if (msg.content.substring(0, 1) === '.' && msg.content.substring(1, 2) !== '.') {
         return GeneralMessageHandler.handleMessage(msg);
