@@ -547,14 +547,18 @@ class GeneralMessageHandler {
     getCommands = async (msg) => {
         const messageEmbed = new Discord.MessageEmbed()
                 .setColor('#0099ff')
-                .setTitle(`Function Examples: `)
-                .setDescription(`*** stock symbols must be capitalized ***`)
-                .addField(`Magic 8 ball`, 'ex: .8 Gonna make some sweet tendies today?', false)
-                .addField("Stock Quotes", 'ex: .TSLA', false)
-                .addField('Company Financials', '(defaults to yearly)', false)
-                .addField('Balance Sheet', '.TSLA [balancesheet | balance | bs] q|uarter|ly', true)
-                .addField('Income Statement', '.TSLA [income | ic] q|uarter|ly', true)
-                .addField('Cash Flow', '.TSLA [cashflow | cf] q|uarter|ly', true);
+                .setTitle(`stock-bot commands: `)
+                .addField(`.poll`, `starts a poll that lasts one hour tallying up who made money in the market today`)
+                .addField(`.poll 2`, `starts a poll that lasts one hour asking if the market will be red or green tomorrow`)
+                .addField(`.poll custom`, `Custom poll - Ex: .poll Question 😀 Answer 1 😁 Answer 2 (etc.)`)
+                .addField(`.earnings or .e or .earn`, `get a company's upcoming earnings date`)
+                .addField(`.news`, `get news about a specific company`)
+                .addField(`.8`, `magic 8 ball! `)
+                .addField(`.tell`, `get the bot to tell somebody off sarcastic spongebob style`)
+                .addField(`.cashflow or .cf`, `gets the cashflow information from the latest SEC filing`)
+                .addField(`.balancesheet or .bs or .balance`, `gets the balance sheet from the latest SEC filing`)
+                .addField(`.income or .ic`, `gets the income information from the latest SEC filing`)
+                .addField(`.quarterly or .q`, `add quarterly or q to cashflow, balancesheet, or income to get the latest quarterly release`);
         let DM = await msg.author.createDM();
         DM.send(messageEmbed);
         msg.react('✅');
