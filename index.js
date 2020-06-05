@@ -3,6 +3,7 @@ const Discord = require('discord.js');
 const client = new Discord.Client();
 const GeneralMessageHandler = require('./general-commands');
 const PlaylistChannelHandler = require('./playlist-handler');
+const BotTalk = require('./bot-talk.js');
 
 client.on('ready', () => {
     console.log('client::ready');
@@ -23,7 +24,7 @@ client.on('message', msg => {
     }
 
     if (msg.mentions.has('683138332863103172') && !msg.mentions.everyone) 
-        return msg.channel.send(':)');
+        BotTalk.handleMessage(msg);
 
     if (msg.content.substring(0, 1) === '.' && msg.content.substring(1, 2) !== '.') {
         return GeneralMessageHandler.handleMessage(msg);
