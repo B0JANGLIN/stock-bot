@@ -13,6 +13,7 @@ A stock-info bot for Discord app based off <a href="https://github.com/hydrabolt
   * `.fin TSLA quarterly cashflow` - or - `.cf tsla q`
   * `.tsla balancesheet` - or - `.financials bs TSLA`
   * `.TSLA income` - or - `.ic TSLA`
+* `@mentions` trigger custom responses using data about each user collected in a .json file
 
 You can also try `.commands` to get a full list of available commands
 
