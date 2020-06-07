@@ -1,5 +1,7 @@
 const MessageObjectFactory = require('./message-objects');
-class PlaylistChannelHandler {
+var fs = require('fs');
+
+class ChannelManager {
     constructor() {}
 
     checkTicker(msg) {
@@ -14,4 +16,4 @@ class PlaylistChannelHandler {
         }
     }
 }
-module.exports = new PlaylistChannelHandler();
+module.exports = new ChannelManager();
