@@ -81,6 +81,7 @@ class GeneralMessageHandler {
                     default:
                         let reg = /^[A-Za-z]+$/;
                         if (phrases.length === 1 && reg.test(phrases[0])) {
+                            console.dir(`GeneralMessageHandler::no keyword::routing to (getQuote)`);
                             this.getQuote(phrases[0].toUpperCase(), msg);
                             found_home = true;
                         }
@@ -156,7 +157,7 @@ class GeneralMessageHandler {
             }
         });
         if (symbol) {
-            $.get(`https://financialmodelingprep.com/api/v3/financials/${statement ? statement : 'balance-sheet-statement'}/${symbol}${frequency ? '?period=' + frequency : ''}&apikey=${auth.fmp_key}`, async data =>{
+            $.get(`https://financialmodelingprep.com/api/v3/financials/${statement ? statement : 'balance-sheet-statement'}/${symbol}?${frequency ? 'period=' + frequency + '&' : ''}apikey=${auth.fmp_key}`, async data =>{
                 if (data && data.symbol && data.financials) {
                     if (statement) statement = statement.split('-').join(' ');
                     let financialData = data.financials[0];
