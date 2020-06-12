@@ -1,4 +1,4 @@
-const auth = require('./auth.json');
+const auth = require('../auth.json');
 const Discord = require('discord.js');
 const MessageObjectFactory = require('./message-objects');
 var jsdom = require('jsdom');
