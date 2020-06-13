@@ -7,3 +7,4 @@ bot-talk.js
 users.json
 discordjs-cheatsheet.js
 db/sqlite3.db
+db/stock-bot.db

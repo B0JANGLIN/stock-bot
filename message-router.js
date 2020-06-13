@@ -1,6 +1,8 @@
 const GeneralMessageHandler = require('./interactions/general-commands.js');
+const request = require('request');
 const ChannelManager = require('./interactions/channel-manager.js');
 const BotTalk = require('./interactions/bot-talk.js');
+const { Channel } = require('discord.js');
 
 class MessageRouter {
     constructor() {}
@@ -23,7 +25,6 @@ class MessageRouter {
         }
     }
 
-    
     handleDirectMessage(msg) {
         if (msg.author.id !== '305030099617447938') return console.dir('no');
         let words = msg.content.split(' ');
@@ -52,6 +53,18 @@ class MessageRouter {
                 postInChannel();
                 break;
         }
+    }
+
+    forwardFlow(params) {
+        request.post({
+            url: 'http://localhost:4000/incoming_flow?apikey=abncdsf',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(params)
+        });
+    }
+
+    postToFlow(params, client) {
+        ChannelManager.postToFlow(params, client);
     }
 }
 module.exports = new MessageRouter();

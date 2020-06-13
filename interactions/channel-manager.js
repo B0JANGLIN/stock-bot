@@ -1,5 +1,5 @@
+const Discord = require('discord.js')
 const MessageObjectFactory = require('./message-objects');
-var fs = require('fs');
 
 class ChannelManager {
     constructor() {}
@@ -13,6 +13,21 @@ class ChannelManager {
                 msg
             );
             msg.delete();
+        }
+    }
+
+    postToFlow(params, client) {
+        if (client) {
+            client.users.fetch('305030099617447938')
+            .then(user => {
+                if (user && params) {
+                    let msg = new Discord.MessageEmbed();
+                    for (let key in params) {
+                        msg.addField(key, params[key], false);
+                    }
+                    user.send(msg);
+                }
+            })
         }
     }
 }
