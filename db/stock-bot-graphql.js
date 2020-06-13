@@ -39,13 +39,6 @@ const UserResponseInput = new GraphQL.GraphQLInputObjectType({
     }
 });
 
-const FlowInput = new GraphQL.GraphQLInputObjectType({
-    name: "FlowInput",
-    fields: {
-        hello: { type: GraphQL.GraphQLString }
-    }
-})
-
 
 const schema = new GraphQL.GraphQLSchema({
   query: new GraphQL.GraphQLObjectType({
@@ -90,15 +83,6 @@ const schema = new GraphQL.GraphQLSchema({
             },
             resolve: (parent, {params}) => {
                 return Promise.resolve(DB.setUserResponse(params));
-            }
-        },
-        the_flow: {
-            type: GraphQL.GraphQLBoolean,
-            args: {
-                params: { type: FlowInput }
-            },
-            resolve: (parent, {params}) => {
-                return Promise.resolve(MessageRouter.forwardFlow(params))
             }
         }
     }

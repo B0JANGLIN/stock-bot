@@ -21,19 +21,25 @@ server.all('*', (req, res, next) => {
         res.status(403).send({
             message: 'Access Forbidden'
         });
+    else {
+        res.status(200).send();
+        next();
+    }
 });
 server.use('/graphql', graphqlHTTP({
     schema: schema,
     graphiql: true,
 }));
 
-server.post('/incoming_flow', (req, res, next) => {
+server.post('/flow', (req, res, next) => {
+    console.log('req.headers :>> ', req.body);
     MessageRouter.postToFlow(req.body, client);
+    res.send();
 });
 
-
-server.listen(4000);
-console.log('Running a GraphQL API server at http://localhost:4000/graphql');
+server.listen(80, () => {
+    console.log('Running a GraphQL API server at http://localhost:80/graphql')
+});
 
 client.on('ready', () => {
     console.log('client::ready');

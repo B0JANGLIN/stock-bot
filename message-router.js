@@ -55,14 +55,6 @@ class MessageRouter {
         }
     }
 
-    forwardFlow(params) {
-        request.post({
-            url: 'http://localhost:4000/incoming_flow?apikey=abncdsf',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(params)
-        });
-    }
-
     postToFlow(params, client) {
         ChannelManager.postToFlow(params, client);
     }

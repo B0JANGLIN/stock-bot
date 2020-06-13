@@ -18,7 +18,7 @@ class ChannelManager {
 
     postToFlow(params, client) {
         if (client) {
-            client.users.fetch('305030099617447938')
+            client.users.fetch('205461703348060161')
             .then(user => {
                 if (user && params) {
                     let msg = new Discord.MessageEmbed();
